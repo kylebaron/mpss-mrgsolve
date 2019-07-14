@@ -1,0 +1,70 @@
+
+
+```{r, include = FALSE}
+source("../global.R")
+library(mrgsolve)
+library(dplyr)
+library(knitr)
+library(lattice)
+```
+
+```{r  echo = FALSE, message = FALSE}
+mod <- mread_cache("pk1", modlib()) %>% 
+  update(end = 192, delta = 0.2) %>% Req(CP)
+data(exidata)
+data <- filter(exidata, ID <=10)
+set.seed(1222)
+```
+
+# Updating the model object
+
+
+---
+
+# Update
+
+On the fly
+
+```{r, eval = FALSE}
+mod %>% update(end = 72) %>% mrgsim()
+```
+
+Persistent 
+
+```{r, eval = FALSE}
+mod <- update(mod, end = 72)
+```
+
+mrgsim will call `update` for you (on the fly)
+```{r, eval = FALSE}
+mod %>% mrgsim(end = 72)
+```
+
+
+# What else can I update?
+* Time
+    - `start`, `end`, `delta`, `add`
+* Parameters and compartment initial values
+* Solver settings
+    * `atol`, `rtol`
+    * `hmax`, `maxsteps`, `mxhnil`, `ixpr`
+* `$OMEGA`, `$SIGMA`
+* `tscale` (rescale the output time)
+* `digits`
+
+```{r, eval = FALSE}
+mod %>% update(rtol = 1E-12) %>% ...
+```
+
+```{r, eval = FALSE}
+mod %>% mrgsim(rtol = 1E-12) %>% ...
+```
+
+# Updating parameters
+
+- Demo
+
+```{r,eval = FALSE}
+mod <- param(mod, CL = 1.5)
+```
+

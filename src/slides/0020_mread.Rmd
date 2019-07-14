@@ -1,0 +1,108 @@
+
+```{r, include = FALSE}
+source("../global.R")
+library(mrgsolve)
+library(dplyr)
+library(knitr)
+library(lattice)
+```
+
+```{r echo = FALSE, message = FALSE}
+mod <- mread_cache("pk1", modlib()) %>% 
+  update(end = 192, delta = 0.2) %>% Req(CP)
+data(exidata)
+data <- filter(exidata, ID <=10)
+set.seed(1222)
+```
+
+# Where did <red>mod</red> come from?
+
+```{r,eval = FALSE}
+mod <- mread("simple", "../../model")
+```
+
+
+```{r, eval = FALSE}
+mod <- mread("<model-name>", "<project-directory>")
+```
+
+- By default mrgsolve looks for the code in the file
+    - <grn>model-name.cpp</grn> in
+    - <blu>project-directory</blu>
+
+- <red>mread demo</red>
+
+```{r, echo = FALSE}
+Sys.sleep(2)
+```
+
+
+
+# Internal model library
+
+Quiz:
+
+```{r, eval = FALSE}
+mod <- mread("<first-argument>", "<second-argument>")
+```
+
+# Internal model library
+
+Quiz:
+
+```{r, eval = FALSE}
+mod <- mread("<first-argument>", "<second-argument>")
+```
+
+```{r, eval = FALSE}
+mod <- mread("<first-argument>", modlib())
+```
+
+```{r}
+modlib()
+```
+
+
+# Internal model library
+```{r}
+mod <- mread("effect", modlib())
+```
+
+```{r}
+mod
+```
+
+
+
+# Try this now
+
+```{r,eval=FALSE}
+mod <- mread("pbpk", modlib())
+```
+
+
+```{r}
+mod <- modlib("pbpk")
+```
+
+# Oops 
+```{r}
+mod <- try(mread("simple"))
+
+mod
+```
+
+# <red>Your turn</red>
+
+Summary: 
+
+* Use `mread` to read, compile and load a model
+* We can get information out of the model object that was returned
+* This is the first step to get simulating (need a model first!)
+* We will cover _writing_ the model later on
+
+<BR>
+
+- File name: <grn>exercises/warm_up.R</grn>
+
+

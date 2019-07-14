@@ -1,0 +1,110 @@
+
+```{r, include = FALSE}
+source("../global.R")
+library(mrgsolve)
+library(dplyr)
+library(knitr)
+library(lattice)
+```
+
+```{r  echo = FALSE, message = FALSE}
+mod <- mread_cache("pk1", modlib()) %>% 
+  update(end = 192, delta = 0.2) %>% Req(CP)
+data(exidata)
+data <- filter(exidata, ID <= 10)
+set.seed(1222)
+```
+
+# Roadmap
+
+We use `mread()` to get a model loaded into R
+
+
+Next, we'll need
+
+* An intervention to apply to the model 
+* A way to simulate from the model 
+* A way to deal with the output (like plot)
+
+
+# Event objects
+
+- `model %>%` <red>intervention</red> `%>% simulate %>% take-a-look`
+
+- Event object  = quick / easy way to implement dose or other intervention
+
+
+```{r}
+e <- ev(amt = 100) 
+
+e
+```
+
+> - Defaults: `time`, `evid`, `cmt`
+
+
+# What to include in `ev(...)`
+
+- <grn>time</grn> event time
+- <grn>cmt</grn> Event compartment
+- <grn>amt</grn> Dose amount
+- <grn>ii</grn> Inter-dose interval
+- <grn>addl</grn> Additional doses to administer
+- <grn>total</grn> Total number of doses to administer
+- <grn>rate</grn> Infusion rate
+- <grn>tinf</grn> Infusion duration
+- <grn>ss</grn> Set to 1 to advance to steady state
+- <grn>evid</grn> Event id
+- <grn>ID</grn> Subject ID (use multiple ids - ID=1:10)
+
+# Interventions and corresponding `evid`
+
+-  <grn>Bolus</grn> dosing (`evid` 1, with `rate`==0)
+-  Zero order <grn>infusion</grn> (`evid` 1, with `rate` > 0)
+-  <grn>Other</grn> type event (`evid` 2)
+    -  This also forces solver reset
+-  Compartment <grn>reset</grn> (`evid` 3)
+-  <grn>Reset</grn> and dose (`evid` 4)
+-  <grn>Replace</grn> the amount in a specific compartment (`evid` 8)
+
+<BR>
+
+<red>demo</red>
+
+
+# Three ways to invoke
+
+<blk>Inline</blk>
+
+```{r, eval = FALSE}
+mod %>% ev(amt = 100) %>% mrgsim()
+```
+
+<blk>Object via pipeline</blk>
+
+```{r, eval = FALSE}
+e <- ev(amt = 100)
+
+mod %>% ev(e) %>% mrgsim()
+```
+
+<blk>As argument</blk>
+
+```{r, eval = FALSE}
+mod %>% mrgsim(events = e)
+```
+
+# Event objects are just data frames
+
+```{r}
+as.data.frame(e)
+```
+
+- We will use a <blk>data_set</blk> later on for populations
+
+- Event objects are convenient
+  - Constructor
+  - Operations
+
+
+

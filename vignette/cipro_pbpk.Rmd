@@ -1,0 +1,317 @@
+---
+title: "Cipro PBPK"
+author: "Metrum Research Group"
+---
+
+https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3555057/pdf/bcp0075-0180.pdf
+
+```{r, include = FALSE}
+source("../src/global.R")
+```
+
+
+```{r}
+library(mrgsolve)
+library(tidyverse)
+library(PKPDmisc)
+library(furrr)
+library(msm)
+Sys.setenv(R_FUTURE_FORK_ENABLE=TRUE)
+future::plan(future::multiprocess)
+```
+
+
+```{r}
+mod <- mread_cache("cipro", "../model")
+
+init(mod)
+```
+
+# 400 mg IV over 1 hour
+
+This is a single dose
+
+```{r}
+single <- ev(amt = 400, tinf = 1)
+
+single
+```
+
+
+```{r}
+out <- mrgsim(mod, events = single, end = 48, delta = 0.1)
+
+plot(out)
+```
+
+Get the 24-hour AUC
+
+Haeseker table 2:
+
+```{r}
+day <- ev(amt = 400, ii = 12, tinf = 1, addl=1)
+
+mrgsim_df(mod, event = day, end = 24, delta = 0.1) %>%
+  summarise(auc = auc_partial(time,CP))
+```
+
+Looks a little low. 
+
+
+Get AUC for the first 5 days
+
+```{r}
+daily <- ev(amt = 400, ii = 12, tinf = 1, addl = 9)
+
+daily
+```
+
+```{r}
+mrgsim_e(mod, daily, end = 24*5) %>% 
+  mutate(DAY = floor(time/24)+1) %>% 
+  group_by(DAY) %>% 
+  filter(DAY <= 5) %>%
+  summarise(auc = auc_partial(time,CP))
+```
+
+
+# Explore some covariate effects
+```{r}
+idata <- expand.idata(SEX = c(0,1), WT = c(70), CRCL = c(30,60,81,110))
+
+idata
+
+out <- 
+  mod %>%
+  ev(daily) %>% 
+  idata_set(idata) %>% 
+  carry_out(SEX,WT,CRCL) %>%
+  mrgsim(Req = "CP", delta = 0.2, end = 48)
+
+plot(out, CP ~ time | factor(SEX), scales="same")  
+```
+
+```{r}
+count(as_tibble(out),ID)
+
+out %>% 
+  filter(time >=24,SEX==0) %>%
+  group_by(SEX,WT,CRCL) %>% 
+  summarise(AUC = auc_partial(time, CP)) %>%
+  mutate(AUCrel = AUC/last(AUC))
+```
+
+
+# Genreate a 95% CI around AUC on day 2 for 400 Q12
+
+Let's simulate AUC on day 2 for 400 mg Q12h and calculate the 95% 
+CI around the median. 
+
+
+Posterior distribution for PBPK model parameters
+```{r}
+post <- readRDS("../data/cipro_post.RDS") %>% filter(irep <= 250)
+```
+
+
+Approximately 50% CV IIV on CL and Kp
+```{r}
+mod <- omat(mod, dmat(0.3,0.3))
+```
+
+We'll need to simulate CRCL
+```{r}
+crcl <- function(n) msm::rtnorm(n, 81, 39, 12, 162)
+```
+
+Create a template for 51 individuals
+
+```{r}
+data <- ev(amt = 400, ii = 12, tinf = 1, addl = 3) %>% ev_rep(ID = 1:51)
+```
+
+Simulate
+```{r}
+out <- future_map_dfr(1:100, function(i) {
+  data <- mutate(data, CRCL = crcl(n()))
+  mod %>% 
+    data_set(data) %>% 
+    Req(CP) %>%
+    carry_out(CRCL) %>%
+    mrgsim(start = 24, end = 48, delta = 0.1) %>%
+    mutate(irep=i)
+})
+```
+
+Summarize
+```{r}
+fun <- median
+
+summ <- 
+  out %>% 
+  filter(time >= 24) %>%
+  group_by(irep,ID) %>% 
+  summarise(auc = auc_partial(time,CP)) %>% 
+  group_by(irep) %>% 
+  summarise(metric = fun(auc)) %>% 
+  ungroup() %>% 
+  summarise(
+    Median = median(metric), 
+    Lower = quantile(metric,0.025), 
+    Upper = quantile(metric,0.975)
+  )
+
+summ
+```
+
+
+# Exposure by tissue
+
+```{r}
+mod <- mread_cache("cipro_conc", "../model", req="")
+out <- mrgsim(mod, events = single, end = 120, delta = 0.1)
+```
+
+
+```{r}
+plot(out, CVEN+CSKN+CADI+CLUN+CKID~time , scales="same", layout=c(5,1))
+```
+
+```{r}
+long <- tidyr::gather(as_tibble(out), variable, value,CLUN:CKID)
+
+summ <- 
+  long %>% 
+  group_by(variable) %>% 
+  summarise(auc = auc_partial(time,value), Cmax = max(value))
+```
+
+```{r}
+ggplot(summ, aes(x = variable, y = auc)) + geom_col() + theme_bw()
+
+ggplot(summ, aes(x = variable, y = Cmax)) + geom_col() + theme_bw()
+```
+
+
+
+```{r}
+mod <- mread_cache("cipro", "../model")
+
+data <- readRDS("../data/cipro_post.RDS") %>% filter(irep <= 100)
+```
+
+```{r}
+e <- ev(amt = 400, tinf = 4, ii = 12, until = 72)
+
+out <- mrgsim_ei(
+  mod, e, data, 
+  end = 72, add=0.05, delta=0.25, 
+  carry_out = "irep"
+)
+
+```
+
+```{r}
+out %>% 
+  filter(time >= 48) %>% 
+  group_by(irep) %>% 
+  mutate(DV = CP) %>%
+  summarise(auc = auc_partial(time,DV)) %>%
+  ungroup() %>% 
+  summarise(med = median(auc), lo = quantile(auc,0.05), hi = quantile(auc,0.95))
+```
+
+```{r}
+sims <- 
+  out %>% 
+  filter(time > 0, time <=12) %>%
+  mutate(DV = Ckid) %>%
+  group_by(time) %>%
+  summarise(med = median(DV), lo = quantile(DV,0.05), hi = quantile(DV,0.95))
+```
+
+```{r}
+ggplot(sims, aes(time)) + 
+  geom_ribbon(aes(ymin = lo, ymax = hi), alpha = 0.4, fill = "firebrick") +
+  geom_line(aes(y = med), lwd = 1, col = "firebrick") + 
+  scale_y_log10() +  theme_bw()
+```
+
+
+
+First, make all of the dosing regimens
+
+```{r}
+e1 <- ev(amt = 200, ii = 12, tinf = 1, until = 48, CRCL = 30)
+e2 <- ev(amt = 400, ii = 12, tinf = 1, until = 48, CRCL = 30)
+e3 <- ev(amt = 400, ii = 12, tinf = 1, until = 48, CRCL = 100)
+e4 <- ev(amt = 600, ii = 8,  tinf = 1, until = 48, CRCL = 100)
+```
+
+```{r}
+post <- readRDS("../data/cipro_post.RDS") %>% filter(irep <= 1000)
+
+mrgsim_e(mod,e1, delta=0.1, end=48) %>% plot(CP~time)
+
+mrgsim_e(mod,e3, delta=0.1, end=48) %>% plot(CP~time)
+
+x <- list(e1,e2,e3,e4)
+
+lab <- c("200q12RF", "400q12RF","400q12", "400q8")
+```
+
+```{r}
+mod <- mread_cache("cipro", "../model") %>% update(start=24,end=48,delta=0.25)
+
+out <- future_imap_dfr(x, function(e,i) {
+  mod %>% 
+    obsonly() %>%
+    mrgsim_ei(e,post,carry_out="irep") %>% 
+    mutate(group = i)
+})
+
+```
+
+# Evaluate MIC  0.25, 0.5, 1
+
+```{r}
+mic <- c(0.25, 0.5, 1)
+
+auc <- 
+  out %>% 
+  group_by(irep,group) %>% 
+  summarise(auc = auc_partial(time,CP)) %>% 
+  mutate(reg = fct_inorder(lab[group]))
+
+summ <- map_df(mic, function(.mic) {
+  auc %>% mutate(mic = .mic, aucr = auc/mic, reg = lab[group])
+})
+
+plot_reg <- function(data,.reg,.bins=80) {
+  sumx <- filter(data, reg==.reg)
+  ggplot(sumx, aes(x = aucr)) + 
+    geom_histogram(alpha = 0.7,col="grey", bins = .bins) + 
+    geom_vline(xintercept=125, col="cornflowerblue", lwd=1, lty=2) + 
+    facet_grid(mic~reg) + theme_bw() 
+}
+
+count(summ,reg)
+
+plot_reg(summ,"200q12RF") + scale_x_log10()
+```
+
+```{r}
+plot_reg(summ, "400q12RF") + scale_x_log10()
+```
+
+```{r}
+plot_reg(summ, "400q12") + scale_x_log10()
+```
+
+```{r}
+plot_reg(summ, "400q8") + scale_x_log10()
+```
+```{r}
+group_by(summ, mic,reg) %>% summarise(PR = round(mean(aucr > 125),3))
+```
+

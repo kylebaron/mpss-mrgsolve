@@ -1,0 +1,159 @@
+
+```{r, include = FALSE}
+source("../src/global.R")
+library(mrgsolve)
+library(dplyr)
+library(knitr)
+library(lattice)
+```
+
+```{r  echo = FALSE, message = FALSE}
+mod <- mread_cache("pk1", modlib()) %>% 
+  update(end = 192, delta = 0.2) %>% Req(CP)
+data(exidata)
+data <- filter(exidata, ID <=10)
+set.seed(1222)
+```
+
+
+
+
+# Create complex events - 1
+
+What's going to happen?
+
+```{r, eval = FALSE}
+e1 <- ev(amt = 200) 
+
+e2 <- ev(amt = 100, time = 24, ii = 24, addl = 2)
+
+c(e1, e2)
+```
+
+# Create complex events - 1
+
+What's going to happen?
+
+```{r, echo = FALSE}
+e1 <- ev(amt = 200) 
+e2 <- ev(amt = 100, time = 24, ii = 24, addl = 2)
+e <- c(e1,e2)
+mod %>% 
+  ev(e) %>% Req(EV,CP) %>%
+  mrgsim(end = 96) %>% plot(EV+CP~.)
+```
+
+
+
+# Create complex events - 1
+
+Combine two events
+
+```{r}
+e1 <- ev(amt = 200) 
+
+e2 <- ev(amt = 100, time = 24, ii = 24, addl = 2)
+
+c(e1, e2)
+```
+
+# Create complex events - 2
+
+What's going to happen?
+
+```{r, eval = FALSE}
+e1 <- ev(amt = 200, ii = 12, addl = 2) 
+
+e2 <- ev(amt = 100, ii = 24, addl = 4)
+
+seq(e1, e2)
+```
+
+# Create complex events - 2
+
+What's going to happen?
+
+```{r, echo = FALSE}
+e1 <- ev(amt = 200, ii = 12, addl = 2) 
+e2 <- ev(amt = 100, ii = 24, addl = 4)
+e <- seq(e1, e2)
+mod %>% Req(EV,CP) %>% mrgsim(events = e, end = 180) %>% plot(EV+CP ~ .)
+```
+
+
+# Create complex events - 2
+
+Put two events in a sequence
+
+```{r}
+e1 <- ev(amt = 200, ii = 12, addl = 2) 
+e2 <- ev(amt = 100, ii = 24, addl = 4)
+
+seq(e1, e2)
+```
+
+
+# Create complex events - 3
+
+What is going to happen?
+
+```{r, eval = FALSE}
+e1 <- ev(amt = 200) 
+
+e2 <- ev(amt = 100, ii = 24, addl = 2)
+
+seq(e1, wait = 36, e2)
+```
+
+# Create complex events - 3
+
+What is going to happen?
+
+```{r, echo = FALSE}
+e1 <- ev(amt = 200) 
+e2 <- ev(amt = 100, ii = 24, addl = 2)
+e <- seq(e1, wait = 36, e2)
+mrgsim(mod, events = e, end = 180) %>% plot(CP ~ .)
+```
+
+# Create complex events - 3
+
+Wait before starting the next part of the regimen
+
+```{r}
+e1 <- ev(amt = 200) 
+
+e2 <- ev(amt = 100, ii = 24, addl = 2)
+
+seq(e1, wait = 36, e2)
+```
+
+
+# <red>Your turn</red>
+
+- File name: <grn>exercises/z-pak.R</grn>
+
+- Section name: <blu>Z-Pak</blu>
+
+
+# We're stil working on this setup
+
+<hr>
+
+<red>model</red> `%>%` <blu>intervention</blu> `%>%` <grn>simulate</grn> `%>%` <orng>take-a-look</orng> 
+
+<hr>
+
+<red>model</red>:
+
+- Load a model with `mread` or `mread_cache`
+- Use the internal library with `modlib("<model-name>")`
+- Check model parameters with `param(mod)`
+- Check model initial conditions with `init(mod)`
+- View model code with `see(mod)`
+
+<blu>intervention</blu>:
+
+- `ev(...`): `amt`, `cmt`, `time`, `ii`, `addl`, `rate`
+- Different ways to combine event objects
+

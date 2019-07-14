@@ -1,0 +1,178 @@
+
+```{r, include = FALSE}
+source("../global.R")
+library(mrgsolve)
+library(dplyr)
+library(knitr)
+library(lattice)
+library(tidyverse)
+select <- dplyr::select
+```
+
+
+# Sensitivity analysis
+
+- Ad-hoc
+  - Sequential: systematically vary the parameter value
+  - Random: sample from a parametric or non-parametric distribution
+- Local
+    - small changes around a nominal value; one at a time
+- Global
+    - explore the whole parameter space; includes interactions
+
+
+# Local sensitivity analysis - `sensFun()`
+
+We use the function `sensFun` from the package FME (`FME::sensFun`)
+
+```{r}
+library(FME)
+```
+
+
+```{r, eval = FALSE}
+?sensFun
+```
+
+- To do local sensitivity analysis, we need 
+    - A function that accepts parameters as an argument and 
+      returns simulated data
+    - Some parameters to test
+    - An output variable of interest
+
+```{r, eval=FALSE}
+sens <- sensFun(my_function, my_parameters, sensvar = my_variable_name)
+```
+
+- `sensFun` will take the parameter values we passed and manipulate them by 
+  small amounts to determine the __local__ sensitivity
+
+# First, look at the result
+
+
+```{r, echo = FALSE,fig.align="center", fig.height = 8, fig.width = 12}
+myfun <- function(pars, mod) {
+  mod %>% 
+    param(pars) %>% 
+    ev(amt = 100) %>% 
+    Req(CP,RESP) %>%
+    mrgsim(end = 72) %>%
+    as.data.frame %>% 
+    select(-ID)
+}
+mod <- modlib("irm1", end = 72, delta = 0.1)
+sims <- mod %>% ev(amt = 100) %>% mrgsim() %>% mutate(var="Concentration",variable="CP",value=CP)
+sims <- select(sims, time,CP,var,variable,value)
+sens <- sensFun(myfun, parms=param(mod)[c("CL", "V2", "Q", "V3", "KA")],mod=mod,sensvar="CP")
+df <- gather(sens,variable,value, CL:KA) %>% mutate(time = x, var = "Sensitivity")
+df <- bind_rows(df,sims)               
+ggplot(df, aes(time,value,col=variable)) + geom_line(lwd=1) + 
+  facet_wrap(~var, scales = "free_y") + theme_bw() + theme(legend.position="top")
+```
+
+
+
+
+# A simulation scenario of interest
+
+```{r}
+mod <- modlib("irm1", end = 72, delta = 0.1)
+
+mod %>%
+  ev(amt = 100) %>% 
+  mrgsim(end = 72, delta = 0.1) %>% 
+  plot
+```
+
+
+# Create `myfun` to capture the scenario
+
+- This is the same workflow, but we wrap it in a function and allow
+parameters (and the model) to be passed in as arguments
+
+```{r}
+
+myfun <- function(pars, mod) {
+  mod %>% 
+    param(pars) %>% 
+    ev(amt = 100) %>% 
+    mrgsim(end = 72) %>%
+    as.data.frame %>% 
+    select(-ID)
+}
+```
+
+- Also, we don't plot the result, but rather return a data frame 
+
+
+# Test out `myfun`
+```{r}
+myfun(param(mod), mod) %>% head()
+```
+
+# Pick some parameters
+```{r}
+pars <- param(mod)[c("CL", "V2", "V3", "KA")]
+
+pars
+```
+
+
+# Run the analysis
+```{r}
+sens <- sensFun(myfun, pars, sensvar = "CP", mod = mod)
+
+head(sens, n=3)
+```
+
+# The default plot method
+```{r}
+plot(sens, legpos = "right")
+
+```
+
+# Re-shape sensitivity analysis results
+```{r}
+sens %>% 
+  gather(variable,value,CL:KA) %>% 
+  ggplot(aes(x,value,col=variable)) + geom_line(lwd=1) + theme_bw()
+
+```
+
+# Global senstivity analysis
+
+- All the parameters vary at once
+- Investigate the whole parameter space
+    - Or reasonable parameter space
+- Evaluate both individual parameters as well as interactions between parameters
+- Much greater computational burden
+
+
+__We'll look at Sobol's method__
+
+
+# Global senstivity analysis
+
+
+- __Sobol Sensitivity Analysis: A Tool to Guide the Development and Evaluation of 
+Systems Pharmacology Models.__
+    - Zhang XY, Trame MN, Lesko LJ, Schmidt S.
+    - CPT Pharmacometrics Syst Pharmacol. 2015 Feb;4(2):69-79. doi: 10.1002/psp4.6.
+    - PMID: 27548289 
+    - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5006244/
+
+# Global senstivity analysis
+
+
+- __Sobol Sensitivity Analysis: A Tool to Guide the Development and Evaluation of 
+~~Systems Pharmacology~~ PBPK Models.__
+    - Zhang XY, Trame MN, Lesko LJ, Schmidt S.
+    - CPT Pharmacometrics Syst Pharmacol. 2015 Feb;4(2):69-79. doi: 10.1002/psp4.6.
+    - PMID: 27548289 
+    - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC5006244/
+
+# Sobol
+
+- Variabillity in the output is decomposed, relating to variability in 
+  different inputs or combinations of inputs
+

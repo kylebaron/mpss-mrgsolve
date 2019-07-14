@@ -1,0 +1,82 @@
+
+
+# Read in a model object with caching
+
+First time to read
+```{r}
+mod <- mread_cache("simple", "../../model")
+```
+
+Next time to read
+
+```{r}
+mod <- mread_cache("simple", "../../model")
+```
+
+# Model build directory (`soloc`)
+
+It can be helpful to set
+
+```{r, eval=FALSE}
+options(mrgsolve.soloc = "my_build_directory")
+```
+
+```{r,eval=FALSE}
+mod <- mread("simple", "model", soloc = "my_build_directory")
+```
+
+# Different ways to call mread
+
+```{r, eval=FALSE}
+mod <- mread("csa.txt", "../../model")
+```
+
+and
+
+```{r, eval=FALSE}
+mod <- mread("../../model/csa.txt")
+```
+
+# Inline model specification
+
+We <red>haven't covered</red> the specifics of coding a model yet
+
+```{r}
+code <- '
+$PARAM CL = 1, V = 20
+$PKMODEL cmt = "CENT"
+'
+```
+
+```{r, eval = FALSE}
+mod <- mcode("dont_do_this", code)
+```
+
+```{r, eval = FALSE}
+mod <- mcode_cache("seriously_dont", code)
+```
+
+
+# Controlling output - <grn>request</grn>
+
+```{r}
+mod %>% mrgsim() %>% head(n = 2)
+```
+
+```{r}
+mod %>% Req(CP) %>% mrgsim() %>% head(n = 2)
+```
+
+
+# Controlling output - <grn>obsonly</grn>
+```{r}
+mod %>% ev(amt=1) %>% mrgsim() %>% head(n = 2)
+```
+
+```{r}
+mod %>% ev(amt=1) %>% obsonly() %>% mrgsim() %>% head(n = 2)
+```
+
+
+
+

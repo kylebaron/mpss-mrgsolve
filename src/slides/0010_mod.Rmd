@@ -1,0 +1,133 @@
+
+
+```{r, include = FALSE}
+source("../global.R")
+library(mrgsolve)
+library(dplyr)
+library(knitr)
+library(lattice)
+```
+
+```{r setup-1, echo = FALSE, message = FALSE}
+mod <- mread_cache("pk1", modlib()) %>% 
+  update(end = 192, delta = 0.2) %>% Req(CP)
+data(exidata)
+data <- filter(exidata, ID <=10)
+set.seed(1222)
+```
+
+# A basic simulation with mrgsolve
+```{r}
+mod %>% ev(amt = 100, ii = 24, addl = 3) %>% mrgsim() %>% plot()
+```
+
+The first / simplest workflow. 
+
+# A basic simulation with mrgsolve
+
+```{r, eval = FALSE}
+mod %>% ev(amt = 100, ii = 24, addl = 3) %>% mrgsim() %>% plot()
+```
+
+- <red>mod</red>: the model object
+    - Ok ... where did `that` come from?
+- <blu>ev(amt = 100, ...)</blu> : the intervention
+    - An `event` in this example
+- <grn>mrgsim()</grn>: actually do the simulation
+- <orng>plot()</orng>: do something with the simulation
+    - `plot`, `mutate`, `as_data_frame` etc ... 
+
+
+> - <red>model</red> `%>%` <blu>intervention</blu> `%>%` <grn>simulate</grn> `%>%` <orng>take-a-look</orng> 
+
+<!-- # What's coming ... -->
+
+<!-- > - `model %>% intervention %>%` <alrt>options</alrt> `%>% simulate %>% ...` -->
+
+<!-- > - `model %>% intervention %>%` <orng>population</orng> `%>% simulate %>% ...` -->
+
+<!-- > - `model %>%` <purp>data-set</purp> `%>% simulate %>% ...` -->
+
+<!-- > - where <purp>data-set</purp> = `intervention + population` -->
+
+<!-- > - For now, let's get this part down  -->
+
+<!-- > - <red>model</red> `%>%` <blu>intervention</blu> `%>%` <grn>simulate</grn> `%>%` <orng>take-a-look<orng>  -->
+
+
+# Why do we use `%>%` ?
+
+What happens first in this operation?
+
+```{r, eval = FALSE}
+mean(sqrt(seq(4)))
+```
+
+# Pipelines
+
+```{r, eval = FALSE}
+mean(sqrt(seq(4)))
+```
+
+```{r, eval = FALSE}
+4  %>% seq() %>% sqrt() %>% mean()
+```
+
+Better.
+
+```{r, eval = FALSE}
+4  %>% 
+  seq(.) %>% 
+  sqrt(.) %>% 
+  mean(., na.rm = TRUE)
+```
+
+```{r,eval = FALSE}
+mod %>% some_intervention() %>% simulate() %>% post_process()
+```
+
+
+# The model object
+
+<red>mod</red><blk>el</blk> `%>% ... `
+
+> - I (almost) always call the model object <red>mod</red> in the documention / examples
+
+> - All the information about the model we need to know to run the simulation
+
+> - <grn>Distinct</grn> from the intervention, the population, the summary
+
+> - But the model <orng>does</orng> know  about output time, random effects
+
+
+# Take a look: overview
+
+```{r, comment = ""}
+mod
+```
+
+# Take a look: parameters (<red>really important</red>)
+```{r, comment = ""}
+param(mod)
+```
+
+> - Parameters get a name
+> - Names and number of parameters gets fixed at compile time
+> - All parameters have a value
+> - Value can be modified after compile time
+
+# Any advanced simulation will need to manipulate the model parameters in some way or another
+
+- Can be `CL`, `V2`, `Q` etc 
+- Fixed effect parameter estimates (`THETA`s)
+- Covariates (`WT`, `EGFR` etc)
+- Flags
+  - Is the dosing weight-based or flat?  You could make a flag for that.
+
+# Take a look: compartments
+```{r, comment = ""}
+init(mod)
+```
+
+> - Every compartment gets a name
+> - Every compartment gets an initial condition

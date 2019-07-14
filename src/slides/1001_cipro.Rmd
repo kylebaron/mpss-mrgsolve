@@ -1,0 +1,127 @@
+
+```{r, echo = FALSE, message = FALSE, warning = FALSE}
+knitr::opts_chunk$set(message = FALSE)
+options(mrgsolve.soloc = "build")
+```
+
+
+```{r, include = FALSE}
+source("../global.R")
+library(mrgsolve)
+library(dplyr)
+library(knitr)
+library(lattice)
+```
+
+# Case study: ciprofloxacin PBPK
+
+- fluoroquinolone antibiotic
+    - UTI , uncomplicated cystitis, SSTI, respiratory tract infection
+    - Pseudomonas aeroginosa
+    - [Bacillus anthracis](https://www.fda.gov/Drugs/EmergencyPreparedness/BioterrorismandDrugPreparedness/ucm063485.htm)
+- PBPK model
+    - A whole-body physiologically based pharmacokinetic (WB-PBPK) model of ciprofloxacin
+    - https://www.ncbi.nlm.nih.gov/pubmed/27578330
+    - Code in `./model/cipro.cpp`
+- AUC:MIC ratio
+    - The ciprofloxacin target AUC : MIC ratio is not reached in hospitalized 
+      patients with the recommended dosing regimens
+    - https://www.ncbi.nlm.nih.gov/pmc/articles/PMC3555057
+
+# Cipro PK: <grn>warm-up</grn>
+
+```{r, eval=FALSE}
+mod <- mread("cipro", "../../model")
+```
+
+- What are the parameters?
+- What are the compartments?
+- What is the model code?
+
+# Cipro PK: <grn>infusion doses</grn>
+
+- Simulate 400 mg as IV infusion over 1 hour
+
+- Plot cipro concentration over 12 hours
+
+
+# Cipro PK: <grn>infusion doses</grn>
+
+- Simulate 400 mg as IV infusion over 1 hour
+
+- Plot cipro concentration over 12 hours
+
+<hr>
+
+- Simulate 400 mg one day of a q12h dosing 
+
+- Plot over 24 hours of dosing
+
+
+# Cipro PK: <grn>covariates</grn>
+
+Explore influence of patient weight, sex, and creatinine clearance on cipro PK
+
+- Weight: 40 to 140 kg
+- Creatinine clearance: 90, 60, 45, 30, 15 mL/min
+- Sex: male / female
+- Inputs: `idata_set`, `event` object
+- Outputs: ciprofloxacin concentration, covariate values
+
+
+
+# Cipro PK: <grn>AUC</grn>
+
+From the Haeseker paper:
+
+> Mean (+/- SD) age was 66 (+/-17) years, the mean clearance corrected for 
+bodyweight was 0.24 l h-1 kg^1 <red>and the mean AUC was 49 mg l^1 h</red>.
+
+Table 2 shows CrCL, CL, V, and AUC by total daily ciprofloxacin dose
+
+Let's confirm the AUC result for each of the covariate groups in the 
+previous step.
+
+Use `PKPDmisc::auc_partial` to calculate AUC.
+
+# Cipro PK: <grn>organ-specific exposure</grn>
+
+>Profiles of unbound ciprofloxacin concentration in different tissues were 
+predicted from the developed WB-PBPK model (Fig. 3). <blu>Kidney and lung were 
+predicted to have higher exposures</blu> as compared to the other organs while 
+muscle, brain and adipose were predicted to have relatively low exposures to 
+ciprofloxacin.
+
+Let's look at exposure in different organs
+
+Use `./model/cipro_conc.cpp` model 
+
+# Cipro PK: <grn>simulation with uncertainty</grn>
+
+
+ciprofloxacin 400 mg IV over 2 hours
+
+What is the distribution of AUC after the last dose on day 3 of q12h dosing?
+
+Use `./model/cipro.cpp`
+
+Use `./data/cipro_post.RDS`
+
+
+# Cipro PK: <grn>AUC:MIC</grn>
+
+Simulate the distribution of 24-hour AUC:MIC for
+
+- MIC: 0.5
+  - 200 mg IV q12h over 1 hour with CRCL = 30 ml/min
+  - 400 mg IV q12h over 1 hour, normal renal function
+  
+- MIC: 1
+  - 400 mg IV q12h over 1 hour 
+  - 400 mg IV q8h  over 1 hour
+
+
+Check progress on the second day of dosing
+
+
+

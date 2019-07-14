@@ -1,0 +1,151 @@
+
+```{r, include = FALSE}
+source("../global.R")
+library(mrgsolve)
+library(dplyr)
+library(knitr)
+library(lattice)
+```
+
+```{r  echo = FALSE, message = FALSE}
+mod <- mread_cache("pk1", modlib()) %>% 
+  update(end = 192, delta = 0.2) %>% Req(CP)
+data(exidata)
+data <- filter(exidata, ID <=10)
+set.seed(1222)
+```
+
+# Simulate
+
+```{r, echo = FALSE, message = FALSE}
+mod <- mread_cache("effect", modlib())
+```
+
+
+<hr>
+
+`model %>% intervention %>%` <grn>simulate</grn>
+
+<hr>
+
+
+
+```{r}
+e <- ev(amt = 100)
+
+mod %>% ev(e) %>% mrgsim()
+```
+
+
+```{r, eval = FALSE}
+mrgsim(mod, events = e)
+```
+
+
+# Simulate and plot
+
+We need to know this to work the example; more details in a bit
+
+```{r}
+mod %>% ev(e) %>% mrgsim() %>% plot()
+```
+
+
+# <red>Your turn</red>
+
+- Background
+
+  - https://www.ncbi.nlm.nih.gov/pubmed/16988206
+  - Meropenem is a carbapanem antibiotic
+  - Like penicillins, efficacy related to time above MIC
+  - The authors wanted to look at extended infusion durations
+
+- File name: <grn>exercises/meropenem.R</grn>
+
+
+# Customizing output
+
+What would you like to "fix" in this plot?
+
+```{r,echo= FALSE}
+mod <- update(mod, end = 12, delta = 6)
+```
+
+```{r}
+mod %>% ev(amt = 100) %>% mrgsim() %>% plot(CP~time)
+```
+
+# Simulation time grid
+
+-  To form a sequence of times
+    - <grn>start</grn> usually `0`
+    - <grn>end</grn> time of last observation
+    - <grn>delta</grn> <blk>output</blk> time step
+-  Additional times to simulate
+    - <grn>add</grn> ad-hoc numeric vector
+    
+```{r}
+stime(mod)
+```
+
+# Simulation end time
+```{r}
+mod %>% ev(amt = 100) %>% mrgsim(end = 48) %>% plot(CP~time)
+```
+
+# Simulation time step
+```{r}
+mod %>% ev(amt = 100) %>% mrgsim(end = 48, delta = 0.1) %>% plot(CP~time)
+```
+
+# Working with simulated output
+
+<hr>
+
+`model %>% intervention %>% simulate %>%` <orng>take-a-look</orng> 
+
+<hr>
+
+# Plot
+
+```{r}
+mod <- mread_cache("effect", modlib())
+
+mod %>% ev(amt = 100) %>% mrgsim() %>% plot()
+```
+
+# Plot
+
+```{r}
+mod %>% ev(amt = 100) %>% mrgsim() %>% 
+  plot(CP + EFFECT~., col = "firebrick")
+```
+
+# Pipeline to dplyr functions
+
+```{r}
+mod %>% ev(amt = 100) %>% mrgsim() %>% mutate(arm = 1)
+```
+
+If we didn't modify the output
+```{r}
+mod %>% mrgsim()
+```
+
+# Other connections to dplyr
+
+* `mod %>% mrgsim() %>% mutate()`
+* `mod %>% mrgsim() %>% filter()`
+* `mod %>% mrgsim() %>% group_by()`
+* `mod %>% mrgsim() %>% as_tibble()`
+
+# <red>Your turn</red>
+
+- Go back to the meropenem example
+- Simulate 7 days of dosing 0.5 g Q 8 h
+- Calcualte the fractional above MIC on day 2 (MIC 2 or 4 mg/L)
+- Demo: try 0.5 g Q 12 h for 1 day in normal and impaired renal function
+
+
+- File name: <grn>exercises/meropenem.R</grn>
+

@@ -1,0 +1,67 @@
+---
+title: "Introduction to <grn>mrgsolve</grn>"
+author: Astellas Summer 2019
+date: Metrum Research Group
+output: 
+  slidy_presentation:
+    number_sections: true
+  html_document:
+    number_sections: true
+    toc: true
+    css: [../src/styles/htmlstyles.css,../src/styles/colors.css]
+---
+
+```{r echo=FALSE}
+options(mrgsolve.soloc = "build")
+knitr::opts_chunk$set(cache=TRUE,autodep=TRUE)
+```
+
+
+```{r child = "0000_welcome.Rmd"}
+
+```
+
+
+```{r child = "0010_mod.Rmd"}
+
+```
+
+```{r child = "0020_mread.Rmd"}
+
+```
+
+```{r child = "0030_event_objects.Rmd"}
+
+```
+
+```{r child = "0040_simulate.Rmd"}
+
+```
+
+```{r child = "0050_update.Rmd"}
+
+```
+
+
+```{r child = "0060_population.Rmd"}
+
+```
+
+```{r child = "0070_specification.Rmd"}
+
+```
+
+```{r child = "0080_second_pass.Rmd"}
+
+```
+
+```{r child = "0090_sensitivity.Rmd"}
+
+```
+
+
+```{r child = "1001_cipro.Rmd"}
+
+```
+
+

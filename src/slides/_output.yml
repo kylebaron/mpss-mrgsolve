@@ -1,0 +1,7 @@
+slidy_presentation:
+  number_sections: true
+  css: 
+    - "../../src/styles/slidystyles.css"
+    - "../../src/styles/colors.css"
+    - "../../src/styles/precode.css"
+

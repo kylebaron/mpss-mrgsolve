@@ -1,0 +1,11 @@
+html_document: 
+  highlight: pygments
+  number_sections: true
+  css: ../src/styles/styles.css
+slidy_presentation:
+  number_sections: true
+  css: 
+    - "../src/styles/slidystyles.css"
+    - "../src/styles/colors.css"
+    - "../src/styles/precode.css"
+  

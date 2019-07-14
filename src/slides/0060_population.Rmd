@@ -1,0 +1,433 @@
+
+
+```{r, include = FALSE}
+source("../global.R")
+library(mrgsolve)
+library(dplyr)
+library(knitr)
+library(lattice)
+```
+
+```{r echo = FALSE, message = FALSE}
+mod <- mread_cache("pk1", modlib()) %>%
+  update(end = 192, delta = 0.2) %>% Req(CP)
+data(exidata)
+data <- filter(exidata, ID <=10)
+set.seed(1222)
+```
+
+```{r, echo = FALSE}
+pop <- exidata
+.out <-
+  mod %>%
+  ev(amt = 100, ii = 24, addl = 3) %>%
+  idata_set(pop, ID <=10) %>%
+  mrgsim()
+```
+
+
+
+# Add a population element to the simulation
+
+- <red>model</red> `%>%` <blu>intervention</blu> `%>%` <grn>simulate</grn> `%>%`  <purp>take-a-look</purp>
+
+> - `model %>% intervention %>%` <orng>population</orng> `%>% simulate %>% take-a-look`
+
+<br>
+This is our second simulation workflow.
+
+
+# One population simulation with mrgsolve
+
+<pre>
+mod %>%
+ev(amt = 100, ii = 24, addl = 3) %>%
+<grn>idata_set(</grn><red>pop</red><grn>)</grn> %>%
+mrgsim() %>% plot()
+</pre>
+
+```{r, echo = FALSE}
+plot(.out)
+```
+
+# `idata_set` takes in individual-level data
+
+- ID  - one per row
+- Typically parameters in columns
+
+```{r}
+head(pop, n = 3)
+
+length(unique(pop$ID))
+```
+
+- This tells mrgsolve to simulate `r length(unique(pop$ID))` units or individuals
+
+# <red>pop</red> and <purp>mod</purp> are connected via <blu>parameters</blu>
+
+```{r}
+head(pop, n = 3)
+```
+
+```{r}
+param(mod)
+```
+
+# What else can we do with `idata`?
+
+Batches of simulations or sensitivity analyses
+
+```{r}
+idata <- expand.idata(CL = seq(0.5, 1.5, 0.25))
+idata
+```
+
+
+# Note: this is the <grn>event</grn> `+` <blu>idata_set</blu> configuration
+
+
+```{r}
+mod %>%
+  idata_set(idata) %>%
+  ev(amt = 100, ii = 24, addl = 2) %>%
+  mrgsim(end = 120) %>% 
+  plot(CP ~ ., logy=TRUE)
+```
+
+# <red>Your turn</red>
+
+- Description: sensitivity analysis in a PBPK model
+
+- File name: <grn>exercises/sensi_pbpk.R</grn>
+
+
+# `data_set` is the dosing equivalent to `idata_set`
+
+
+```{r}
+data <- expand.ev(amt = c(100, 300, 1000), ii = 24, addl = 3)
+
+head(data)
+```
+
+# Note: this is `data_set` configuration
+
+```{r}
+mod %>%
+  data_set(data) %>%
+  mrgsim(end = 120) %>% plot(log(CP) ~ .)
+```
+
+
+
+# <grn>data_set</grn> can also carry parameters
+
+```{r}
+data <- expand.ev(
+  amt = c(100,300,1000),
+  ii = 24, addl = 3,
+  CL = seq(0.5,1.5, 0.5)
+)
+
+head(data)
+```
+
+---
+```{r}
+data <- mutate(data, dose = amt)
+
+mod %>%
+  data_set(data) %>%
+  mrgsim(carry_out = "dose", end = 120) %>%
+  plot(log(CP)~time|factor(dose), group = ID, scales = "same")
+```
+
+
+# <blk>carry_out</blk> 
+
+Copy from the input data to the output data
+
+```{r}
+mod %>% carry_out(dose) %>% data_set(data, dose==300) %>% mrgsim()
+```
+
+
+# <grn>data_set</grn> and <blu>ev</blu>
+
+```{r}
+head(data, n = 3)
+```
+
+```{r}
+ev(amt = 100, ii = 24, addl = 3)
+```
+
+# We have now seen 3 simulation setups
+
+> - `mod + ev = ?`
+> - `mod + idata_set + ev = ?`
+> - `mod + data_set = ?`
+
+# Wait a minute ...
+```{r}
+head(data)
+```
+
+
+
+# Generating data sets
+
+Recall that data sets are just plain old data.frames in R.  Feel free to 
+code these up in any way that is convenient for you. 
+
+In our experience, the following helper functions cover many (not every)
+common needs for building the data sets. 
+
+
+- `expand.ev`
+- `as_data_set`
+- `ev_rep`
+- `ev_assign`
+
+
+# `expand.ev`
+
+* Like `expand.grid` ... gives "all combinations"
+```{r}
+expand.ev(ID = 1:2, amt = c(100,200))
+```
+
+
+# `as_data_set`
+
+* Combine event objects into a single data set
+
+```{r}
+data <- as_data_set(
+  ev(amt = 100, ii = 12, addl = 19, ID = 1:2),
+  ev(amt = 200, ii = 24, addl = 9,  ID = 1:3),
+  ev(amt = 150, ii = 24, addl = 9,  ID = 1:4)
+)
+```
+```{r, echo = FALSE}
+head(data, n = 10)
+```
+
+
+# `ev_rep`
+
+* Replicate an event object for several IDs
+
+```{r}
+e <- ev(amt = 100, ii = 12, addl = 14)
+ev_rep(e, ID = seq(5))
+```
+
+```{r, eval = FALSE}
+e <- ev(amt = 100, ii = 12, addl = 14, ID = seq(5))
+```
+
+
+# `ev_rep`
+
+```{r}
+e <- seq(ev(amt = 100), wait = 36, ev(amt = 50, ii = 24, addl = 4))
+e
+```
+```{r}
+ev_rep(e, ID = seq(2))
+```
+
+
+# `ev_assign`
+
+```{r}
+pop <- expand.idata(GROUP = c(1,2), ID = 1:3)
+head(pop)
+
+e1 <- ev(amt = 100, ii = 24, addl = 9)
+e2 <- mutate(e1, amt = 200)
+
+data <- ev_assign(
+  l = list(e1,e2), 
+  idata = pop, 
+  evgroup = "GROUP",
+  join = TRUE
+)
+
+head(data)
+
+```
+
+
+
+# <red>Your turn</red>
+
+- Description: simulate GCSF PK/PD profiles for weight-based
+dosing
+
+- File name: <grn>exercises/gcsf.R</grn>
+
+
+
+
+# Create complex events - 1
+
+What's going to happen?
+
+```{r, eval = FALSE}
+e1 <- ev(amt = 200) 
+
+e2 <- ev(amt = 100, time = 24, ii = 24, addl = 2)
+
+c(e1, e2)
+```
+
+# Create complex events - 1
+
+What's going to happen?
+
+```{r, echo = FALSE}
+e1 <- ev(amt = 200) 
+e2 <- ev(amt = 100, time = 24, ii = 24, addl = 2)
+e <- c(e1,e2)
+mod %>% 
+  ev(e) %>% Req(EV,CP) %>%
+  mrgsim(end = 96) %>% plot(EV+CP~.)
+```
+
+
+
+# Create complex events - 1
+
+Combine two events
+
+```{r}
+e1 <- ev(amt = 200) 
+
+e2 <- ev(amt = 100, time = 24, ii = 24, addl = 2)
+
+c(e1, e2)
+```
+
+# Create complex events - 2
+
+What's going to happen?
+
+```{r, eval = FALSE}
+e1 <- ev(amt = 200, ii = 12, addl = 2) 
+
+e2 <- ev(amt = 100, ii = 24, addl = 4)
+
+seq(e1, e2)
+```
+
+# Create complex events - 2
+
+What's going to happen?
+
+```{r, echo = FALSE}
+e1 <- ev(amt = 200, ii = 12, addl = 2) 
+e2 <- ev(amt = 100, ii = 24, addl = 4)
+e <- seq(e1, e2)
+mod %>% Req(EV,CP) %>% mrgsim(events = e, end = 180) %>% plot(EV+CP ~ .)
+```
+
+
+# Create complex events - 2
+
+Put two events in a sequence
+
+```{r}
+e1 <- ev(amt = 200, ii = 12, addl = 2) 
+e2 <- ev(amt = 100, ii = 24, addl = 4)
+
+seq(e1, e2)
+```
+
+
+# Create complex events - 3
+
+What is going to happen?
+
+```{r, eval = FALSE}
+e1 <- ev(amt = 200) 
+
+e2 <- ev(amt = 100, ii = 24, addl = 2)
+
+seq(e1, wait = 36, e2)
+```
+
+# Create complex events - 3
+
+What is going to happen?
+
+```{r, echo = FALSE}
+e1 <- ev(amt = 200) 
+e2 <- ev(amt = 100, ii = 24, addl = 2)
+e <- seq(e1, wait = 36, e2)
+mrgsim(mod, events = e, end = 180) %>% plot(CP ~ .)
+```
+
+# Create complex events - 3
+
+Wait before starting the next part of the regimen
+
+```{r}
+e1 <- ev(amt = 200) 
+
+e2 <- ev(amt = 100, ii = 24, addl = 2)
+
+seq(e1, wait = 36, e2)
+```
+
+
+# <red>Your turn</red>
+
+- File name: <grn>exercises/z-pak.R</grn>
+
+- Section name: <blu>Z-Pak</blu>
+
+
+# We're stil working on this setup
+
+<hr>
+
+<red>model</red> `%>%` <blu>intervention</blu> `%>%` <grn>simulate</grn> `%>%` <orng>take-a-look</orng> 
+
+<hr>
+
+<red>model</red>:
+
+- Load a model with `mread` or `mread_cache`
+- Use the internal library with `modlib("<model-name>")`
+- Check model parameters with `param(mod)`
+- Check model initial conditions with `init(mod)`
+- View model code with `see(mod)`
+
+<blu>intervention</blu>:
+
+- `ev(...`): `amt`, `cmt`, `time`, `ii`, `addl`, `rate`
+- Different ways to combine event objects
+
+
+
+# <red>Your turn</red>
+
+- Description: Population PK of azithromycin
+
+- File name: <grn>exercises/population_azithromycin.R</grn>
+
+
+# <red>Your turn</red>
+
+- Description: simulate PK profiles using empirical Bayes estimates 
+from a meropenem model fit in NONMEM
+
+- File name: <grn>exercises/sim_ebe.R</grn>
+
+
+
+
+
+
