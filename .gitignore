@@ -2,3 +2,7 @@
 .Rhistory
 .RData
 .Ruserdata
+build
+src/slides/build
+src/slides/master_cache
+src/slides/slides_files
