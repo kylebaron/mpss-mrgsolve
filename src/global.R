@@ -1,4 +1,4 @@
-.libPaths("/data/Rlibs")
+#.libPaths("/data/Rlibs")
 options(mrgsolve.soloc = "build")
 knitr::opts_chunk$set(
   comment = '.', 
