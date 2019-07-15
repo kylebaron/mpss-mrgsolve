@@ -22,7 +22,7 @@ out$CP
 
 as.data.frame(out)
 
-as_data_frame(out)
+as_tibble(out)
 
 filter(out, time==12)
 

@@ -142,9 +142,10 @@ mod %>% mrgsim()
 # <red>Your turn</red>
 
 - Go back to the meropenem example
-- Simulate 7 days of dosing 0.5 g Q 8 h
-- Calcualte the fractional above MIC on day 2 (MIC 2 or 4 mg/L)
-- Demo: try 0.5 g Q 12 h for 1 day in normal and impaired renal function
+- Simulate 7 days of dosing 0.5 g Q 8 h over 0.5 hour
+- Calcualte the fractional time above MIC on day 2 (MIC 2 or 4 mg/L)
+- Demo: try 0.5 g Q 12 h over 0.5 hour for 1 day in normal and impaired 
+  renal function
 
 
 - File name: <grn>exercises/meropenem.R</grn>

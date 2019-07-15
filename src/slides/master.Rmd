@@ -1,6 +1,6 @@
 ---
 title: "Introduction to <grn>mrgsolve</grn>"
-author: Astellas Summer 2019
+author: MPSS Summer 2019
 date: Metrum Research Group
 output: 
   slidy_presentation:

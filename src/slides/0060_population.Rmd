@@ -98,7 +98,7 @@ mod %>%
 
 - Description: sensitivity analysis in a PBPK model
 
-- File name: <grn>exercises/sensi_pbpk.R</grn>
+- File name: <grn>exercises/sensitivity.R</grn>
 
 
 # `data_set` is the dosing equivalent to `idata_set`

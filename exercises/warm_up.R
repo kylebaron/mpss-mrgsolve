@@ -14,5 +14,3 @@ rm(list = ls())
 mod <- mread()
 
 
-
-

@@ -4,7 +4,6 @@ library(dplyr)
 library(mrgsolve)
 rm(list = ls())
 
-
 #' Here is a PBPK model for DDI between a statin and CsA
 mod <- mread("yoshikado", "model", delta=0.1, end = 12) 
 
@@ -28,8 +27,4 @@ ddi <- seq(csa, wait = 0.5, pit)
 #' - Make a plot
 #' - Summarize the variability in Cmax
 #' - Summarize the variability in AUC
-#' 
-
-
-
 

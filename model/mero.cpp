@@ -16,7 +16,7 @@ double V2 = THETA4*exp(ETA(4));
 
 $NMXML 
 run = 1001
-proj = "nonmem/meropenem"
+proj = "model"
 omega = TRUE, sigma = TRUE
 
 $TABLE
